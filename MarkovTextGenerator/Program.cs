@@ -8,21 +8,8 @@ public class Program
 
         Console.WriteLine("Welcome to Marky Markov's Random Text Generator!");
 
-        Console.WriteLine("Enter some text I can learn from (enter single ! to finish): ");
-
-        // LoadText("Sample.txt", chain);
-
-        while (true)
-        {
-
-            Console.Write("> ");
-
-            var line = Console.ReadLine();
-            if (line == "!")
-                break;
-
-            chain.AddSentence(line);  // Let the chain process this string
-        }
+        string dataFile = args.Length > 0 ? args[0] : "Sample.txt";
+        LoadText(dataFile, chain);
 
         // Now let's update all the probabilities with the new data
         chain.UpdateProbabilities();
@@ -33,21 +20,36 @@ public class Program
 
         var word = Console.ReadLine() ?? string.Empty;
         var nextWord = chain.GetNextWord(word);
-        Console.WriteLine("I predict the next word will be " + nextWord);
+        Console.WriteLine("I predict the next word will be " + (string.IsNullOrEmpty(nextWord) ? "<end of sentence>" : nextWord));
+
+        if (chain.Words.Count > 0)
+        {
+            string startingWord = chain.GetRandomStartingWord();
+            string generatedSentence = chain.GenerateSentence(startingWord);
+            Console.WriteLine($"Random generated sentence: {generatedSentence}");
+        }
+        else
+        {
+            Console.WriteLine("No training data was loaded, so no random sentence could be generated.");
+        }
     }
 
     static void LoadText(string filename, Chain chain)
     {
-        int counter = 0;
+        string path = Path.Combine(Environment.CurrentDirectory, "Data", filename);
 
-        string path = Path.Combine(Environment.CurrentDirectory, $"data\\{filename}");
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"Training file not found: {path}");
+            return;
+        }
 
         var lines = File.ReadAllLines(path);
         foreach (var line in lines)
         {
             chain.AddSentence(line);
-            counter++;
         }
+
+        Console.WriteLine($"Loaded {lines.Length} training lines from {filename}.");
     }
 }
-
