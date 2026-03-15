@@ -31,9 +31,23 @@ public class Chain
     /// <param name="sentence"></param>
     public void AddSentence(string? sentence)
     {
-        // TODO: Break sentence up into word pairs
-        // TODO: Add each word pair to the chain by calling AddPair
-        // TODO: The last word of any sentence will be paired up with an empty string to show that it is the end of the sentence
+        if (string.IsNullOrWhiteSpace(sentence))
+        {
+            return;
+        }
+
+        string[] parts = sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < parts.Length - 1; i++)
+        {
+            AddPair(parts[i], parts[i + 1]);
+        }
+
+        AddPair(parts[^1], string.Empty);
     }
 
     // Adds a pair of words to the chain that will appear in order
@@ -81,11 +95,21 @@ public class Chain
         {
             List<Word> choices = value;
             double test = _rand.NextDouble();
+            double runningTotal = 0.0;
 
-            Console.WriteLine("I picked the number " + test);
+            foreach (Word choice in choices)
+            {
+                runningTotal += choice.Probability;
+                if (test <= runningTotal)
+                {
+                    return choice.Value;
+                }
+            }
+
+            return choices[^1].Value;
         }
 
-        return "idkbbq";
+        return string.Empty;
     }
 
     /// <summary>
@@ -96,7 +120,27 @@ public class Chain
     /// <returns></returns>
     public string GenerateSentence(string startingWord)
     {
-        return "";
+        if (string.IsNullOrWhiteSpace(startingWord))
+        {
+            return string.Empty;
+        }
+
+        List<string> words = new() { startingWord };
+        string currentWord = startingWord;
+
+        while (true)
+        {
+            string nextWord = GetNextWord(currentWord);
+            if (string.IsNullOrEmpty(nextWord))
+            {
+                break;
+            }
+
+            words.Add(nextWord);
+            currentWord = nextWord;
+        }
+
+        return string.Join(" ", words);
     }
 
     /// <summary>
@@ -123,4 +167,3 @@ public class Chain
         }
     }
 }
-

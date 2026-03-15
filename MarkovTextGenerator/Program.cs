@@ -8,20 +8,13 @@ public class Program
 
         Console.WriteLine("Welcome to Marky Markov's Random Text Generator!");
 
-        Console.WriteLine("Enter some text I can learn from (enter single ! to finish): ");
+        string dataFile = args.Length > 0 ? args[0] : "Sample.txt";
+        int loadedLines = LoadText(dataFile, chain);
 
-        // LoadText("Sample.txt", chain);
-
-        while (true)
+        if (loadedLines == 0)
         {
-
-            Console.Write("> ");
-
-            var line = Console.ReadLine();
-            if (line == "!")
-                break;
-
-            chain.AddSentence(line);  // Let the chain process this string
+            Console.WriteLine("No training data loaded. Please fix the file path/name and run again.");
+            return;
         }
 
         // Now let's update all the probabilities with the new data
@@ -33,21 +26,45 @@ public class Program
 
         var word = Console.ReadLine() ?? string.Empty;
         var nextWord = chain.GetNextWord(word);
-        Console.WriteLine("I predict the next word will be " + nextWord);
+        Console.WriteLine("I predict the next word will be " + (string.IsNullOrEmpty(nextWord) ? "<end of sentence>" : nextWord));
+
+        string startingWord = chain.GetRandomStartingWord();
+        string generatedSentence = chain.GenerateSentence(startingWord);
+        Console.WriteLine($"Random generated sentence: {generatedSentence}");
     }
 
-    static void LoadText(string filename, Chain chain)
+    static int LoadText(string filename, Chain chain)
     {
-        int counter = 0;
+        string[] candidatePaths =
+        [
+            Path.Combine(Environment.CurrentDirectory, "Data", filename),
+            Path.Combine(Environment.CurrentDirectory, "MarkovTextGenerator", "Data", filename),
+            Path.Combine(AppContext.BaseDirectory, "Data", filename),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", filename),
+        ];
 
-        string path = Path.Combine(Environment.CurrentDirectory, $"data\\{filename}");
+        string? existingPath = candidatePaths
+            .Select(Path.GetFullPath)
+            .FirstOrDefault(File.Exists);
 
-        var lines = File.ReadAllLines(path);
+        if (existingPath is null)
+        {
+            Console.WriteLine("Training file not found. Checked:");
+            foreach (var candidatePath in candidatePaths.Select(Path.GetFullPath))
+            {
+                Console.WriteLine($" - {candidatePath}");
+            }
+
+            return 0;
+        }
+
+        var lines = File.ReadAllLines(existingPath);
         foreach (var line in lines)
         {
             chain.AddSentence(line);
-            counter++;
         }
+
+        Console.WriteLine($"Loaded {lines.Length} training lines from {existingPath}.");
+        return lines.Length;
     }
 }
-
